@@ -1,0 +1,37 @@
+name: Scrape PDFs daily
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # Tous les jours à 2h du matin UTC
+  workflow_dispatch:      # Permet déclenchement manuel
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Run scraping script
+        run: python scrape_and_push.py
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add pdf_links.json
+          git commit -m "Mise à jour automatique de la liste PDF"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
