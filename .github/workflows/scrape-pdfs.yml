@@ -29,6 +29,9 @@ jobs:
       - name: Run scraping script
         run: python scrape_and_push.py
 
+      - name: Generate sitemap.xml
+        run: python generate_sitemap.py
+
       - name: Vérifier la présence du fichier
         run: |
           if [ -f pdf_links.json ]; then
@@ -47,15 +50,14 @@ jobs:
           git fetch origin main
           git checkout main
 
-          if [ -f pdf_links.json ]; then
-            git add pdf_links.json
+          if [ -f pdf_links.json ] || [ -f sitemap.xml ]; then
+            git add pdf_links.json sitemap.xml
             if git diff --cached --quiet; then
               echo "Aucun changement à commit."
             else
-              git commit -m "Mise à jour automatique de la liste PDF"
+              git commit -m "Mise à jour automatique PDF et sitemap"
               git pull origin main --rebase
               git push origin HEAD:main
             fi
           else
-            echo "pdf_links.json introuvable, rien à commit."
-          fi
+            echo "Aucun fichier à commit."
