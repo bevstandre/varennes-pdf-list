@@ -34,4 +34,33 @@ def find_pdfs_in_page(url):
             href = a['href']
             if href.lower().endswith('.pdf'):
                 if href.startswith('/'):
-                    href = 'https:/
+                    href = 'https://www.ville.varennes.qc.ca' + href
+                elif not href.startswith('http'):
+                    href = url.rsplit('/', 1)[0] + '/' + href
+                pdf_links.append(href)
+    except Exception as e:
+        print(f"Erreur sur {url} : {e}")
+    return pdf_links
+
+def main():
+    print("Chargement du sitemap...")
+    urls = get_sitemap_urls(SITEMAP_URL)
+    all_pdf_links = set()
+    for page_url in urls:
+        pdf_links = find_pdfs_in_page(page_url)
+        all_pdf_links.update(pdf_links)
+        time.sleep(0.3)  # Respect du serveur
+    sorted_links = sorted(all_pdf_links)
+    print(f"{len(sorted_links)} liens PDF trouvés.")
+    try:
+        with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+            json.dump(sorted_links, f, ensure_ascii=False, indent=2)
+        print(f"Fichier {OUTPUT_FILE} généré avec succès.")
+    except Exception as e:
+        print(f"Erreur lors de l’écriture du fichier : {e}")
+        sys.exit(1)
+
+    print("Scraping terminé avec succès.")
+
+if __name__ == "__main__":
+    main()
