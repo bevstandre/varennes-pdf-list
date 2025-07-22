@@ -9,6 +9,9 @@ jobs:
   scrape:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -28,23 +31,31 @@ jobs:
 
       - name: Vérifier la présence du fichier
         run: |
-          ls -lh pdf_links.json || echo "pdf_links.json absent"
-          cat pdf_links.json || echo "Impossible d’afficher le contenu : absent"
+          if [ -f pdf_links.json ]; then
+            echo "Fichier trouvé :"
+            ls -lh pdf_links.json
+            cat pdf_links.json
+          else
+            echo "Fichier pdf_links.json absent"
+          fi
 
       - name: Commit and push changes (if any)
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+
+          git fetch origin main
+          git checkout main
+
           if [ -f pdf_links.json ]; then
             git add pdf_links.json
             if git diff --cached --quiet; then
               echo "Aucun changement à commit."
             else
               git commit -m "Mise à jour automatique de la liste PDF"
-              git push https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }} HEAD:main
+              git pull origin main --rebase
+              git push origin HEAD:main
             fi
           else
             echo "pdf_links.json introuvable, rien à commit."
           fi
-        env:
-          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
