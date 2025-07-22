@@ -2,8 +2,8 @@ name: Scrape PDFs daily
 
 on:
   schedule:
-    - cron: '0 2 * * *'   # Tous les jours à 2h du matin UTC
-  workflow_dispatch:      # Permet déclenchement manuel
+    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 jobs:
   scrape:
@@ -27,17 +27,24 @@ jobs:
         run: python scrape_and_push.py
 
       - name: Vérifier la présence du fichier
-        run: ls -lh pdf_links.json
+        run: |
+          ls -lh pdf_links.json || echo "pdf_links.json absent"
+          cat pdf_links.json || echo "Impossible d’afficher le contenu : absent"
 
       - name: Commit and push changes (if any)
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add pdf_links.json || echo "pdf_links.json absent"
-          if git diff --cached --quiet; then
-            echo "Aucun changement à commit."
+          if [ -f pdf_links.json ]; then
+            git add pdf_links.json
+            if git diff --cached --quiet; then
+              echo "Aucun changement à commit."
+            else
+              git commit -m "Mise à jour automatique de la liste PDF"
+              git push https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }} HEAD:main
+            fi
           else
-            git commit -m "Mise à jour automatique de la liste PDF" && git push
+            echo "pdf_links.json introuvable, rien à commit."
           fi
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
