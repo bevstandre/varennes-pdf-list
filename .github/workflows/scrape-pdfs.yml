@@ -1,8 +1,8 @@
-name: Scrape PDFs daily
+name: Scrape PDFs and generate sitemap daily
 
 on:
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '0 2 * * *'  # Exécution quotidienne à 2h UTC
   workflow_dispatch:
 
 jobs:
@@ -29,18 +29,15 @@ jobs:
       - name: Run scraping script
         run: python scrape_and_push.py
 
-      - name: Generate sitemap.xml
+      - name: Generate sitemap
         run: python generate_sitemap.py
 
-      - name: Vérifier la présence du fichier
+      - name: Vérifier les fichiers générés
         run: |
-          if [ -f pdf_links.json ]; then
-            echo "Fichier trouvé :"
-            ls -lh pdf_links.json
-            cat pdf_links.json
-          else
-            echo "Fichier pdf_links.json absent"
-          fi
+          echo "Contenu du répertoire après génération :"
+          ls -lh
+          echo "Aperçu du sitemap.xml :"
+          head -n 20 sitemap.xml || true
 
       - name: Commit and push changes (if any)
         run: |
@@ -50,14 +47,11 @@ jobs:
           git fetch origin main
           git checkout main
 
-          if [ -f pdf_links.json ] || [ -f sitemap.xml ]; then
-            git add pdf_links.json sitemap.xml
-            if git diff --cached --quiet; then
-              echo "Aucun changement à commit."
-            else
-              git commit -m "Mise à jour automatique PDF et sitemap"
-              git pull origin main --rebase
-              git push origin HEAD:main
-            fi
+          git add pdf_links.json sitemap.xml
+          if git diff --cached --quiet; then
+            echo "Aucun changement à commit."
           else
-            echo "Aucun fichier à commit."
+            git commit -m "Mise à jour automatique des PDF et du sitemap"
+            git pull origin main --rebase
+            git push origin HEAD:main
+          fi
